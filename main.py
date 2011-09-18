@@ -83,8 +83,8 @@ class PivotalProject(object):
                 'current',
                 ]:
             raise AttributeError("No souch iteration group %s" % name)
-        url = 'https://www.pivotaltracker.com/services/\
-                v3/projects/%d/iterations/%s' % (self.pid, name)
+        url = 'https://www.pivotaltracker.com/services/v3/projects/%d/iterations/%s' % (self.pid, name)
+        print url
         req = urllib2.Request(url, None, {'X-TrackerToken': self.pivotal.token})
         response = urllib2.urlopen(req)
         setattr(self, 'name', self.__parseIterationsXML(response.read()))
