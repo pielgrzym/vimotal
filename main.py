@@ -1,5 +1,6 @@
 import urllib, urllib2
 import ConfigParser
+import cPickle as pickle
 from xml.dom import minidom
 
 class Pivotal(object):
@@ -11,7 +12,16 @@ class Pivotal(object):
         user = self.settings.get('auth', 'user')
         password = self.settings.get('auth', 'password')
         self.token = self.getToken(user, password)
-        self.projects = self.populateProjects()
+        cache = self.settings.get('main', 'cache')
+        cachefile = self.settings.get('main', 'cachefile')
+        try:
+            with open(os.path.join(home,cachefile), 'rb') as cache:
+                self.projects = pickle.load(cache)
+                print 'cache loaded'
+        except (IOError, EOFError):
+            with open(os.path.join(home,cachefile), 'wb') as cache:
+                self.projects = self.populateProjects()
+                pickle.dump(self.projects, cache)
 
     def populateProjects(self):
         config_sections = self.settings.sections()
