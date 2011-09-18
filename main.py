@@ -63,16 +63,31 @@ class PivotalProject(object):
         self.pivotal = pivotal
         self.pid = int(pid)
         self.name = name
-        self.fetchIterations()
+        self.fetchIterationGroup('current')
+        self.fetchIterationGroup('backlog')
 
     def __unicode__(self):
         return '%s [#%d]' % (self.name, self.pid)
 
-    def fetchIterations(self):
+    def fetchAllIterations(self):
         url = 'https://www.pivotaltracker.com/services/v3/projects/%d/iterations' % self.pid
         req = urllib2.Request(url, None, {'X-TrackerToken': self.pivotal.token})
         response = urllib2.urlopen(req)
         self.iterations = self.__parseIterationsXML(response.read())
+
+    def fetchIterationGroup(self, name):
+        if name not in [
+                'current_backlog',
+                'backlog',
+                'done',
+                'current',
+                ]:
+            raise AttributeError("No souch iteration group %s" % name)
+        url = 'https://www.pivotaltracker.com/services/\
+                v3/projects/%d/iterations/%s' % (self.pid, name)
+        req = urllib2.Request(url, None, {'X-TrackerToken': self.pivotal.token})
+        response = urllib2.urlopen(req)
+        setattr(self, 'name', self.__parseIterationsXML(response.read()))
 
     def __parseIterationsXML(self, xml):
         dom = minidom.parseString(xml)
