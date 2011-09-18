@@ -1,3 +1,4 @@
+import os
 import urllib, urllib2
 import ConfigParser
 import cPickle as pickle
@@ -5,25 +6,19 @@ from xml.dom import minidom
 
 class Pivotal(object):
     def __init__(self):
-        import os
         home = os.getenv("HOME")
         self.settings = ConfigParser.ConfigParser()
         self.settings.read(os.path.join(home, '.vimotal'))
         user = self.settings.get('auth', 'user')
         password = self.settings.get('auth', 'password')
         self.token = self.getToken(user, password)
-        cache = self.settings.get('main', 'cache')
-        cachefile = self.settings.get('main', 'cachefile')
+        # cache = self.settings.get('main', 'cache')
         try:
-            with open(os.path.join(home,cachefile), 'rb') as cache:
-                self.projects = pickle.load(cache)
-                print 'cache loaded'
+            self.projects = self.readCache()
         except (IOError, EOFError):
-            with open(os.path.join(home,cachefile), 'wb') as cache:
-                self.projects = self.populateProjects()
-                pickle.dump(self.projects, cache)
+            self.fetchProjects()
 
-    def populateProjects(self):
+    def fetchProjects(self):
         config_sections = self.settings.sections()
         project_names = filter(lambda x: x.startswith('project_'), config_sections)
         r = {}
@@ -31,7 +26,24 @@ class Pivotal(object):
             pid = self.settings.get(project_name, 'id')
             project = PivotalProject(self, pid, project_name)
             r[project_name] = project
-        return r
+        self.writeCache(r)
+        self.projects = r
+
+    def readCache(self):
+        c = None
+        cachefile = self.settings.get('main', 'cachefile')
+        home = os.getenv("HOME")
+        with open(os.path.join(home,cachefile), 'rb') as cache:
+            c = pickle.load(cache)
+        print 'read cache'
+        return c
+
+    def writeCache(self, data):
+        cachefile = self.settings.get('main', 'cachefile')
+        home = os.getenv("HOME")
+        with open(os.path.join(home,cachefile), 'wb') as cache:
+            pickle.dump(data, cache)
+        print 'write cache'
 
     def getToken(self, username, password):
         authurl = "https://www.pivotaltracker.com/services/v3/tokens/active"
