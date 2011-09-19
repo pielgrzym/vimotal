@@ -4,6 +4,13 @@ import ConfigParser
 import cPickle as pickle
 from xml.dom import minidom
 
+ITERATION_GROUPS = (
+        'current_backlog',
+        'backlog',
+        'done',
+        'current',
+        )
+
 class Pivotal(object):
     def __init__(self):
         home = os.getenv("HOME")
@@ -35,7 +42,6 @@ class Pivotal(object):
         home = os.getenv("HOME")
         with open(os.path.join(home,cachefile), 'rb') as cache:
             c = pickle.load(cache)
-        print 'read cache'
         return c
 
     def writeCache(self, data):
@@ -43,7 +49,6 @@ class Pivotal(object):
         home = os.getenv("HOME")
         with open(os.path.join(home,cachefile), 'wb') as cache:
             pickle.dump(data, cache)
-        print 'write cache'
 
     def getToken(self, username, password):
         authurl = "https://www.pivotaltracker.com/services/v3/tokens/active"
@@ -54,17 +59,19 @@ class Pivotal(object):
         data = urllib.urlencode(values)
         request = urllib2.Request(authurl, data)
         response = urllib2.urlopen(request)
-        response_dom = minidom.parseString(response.read())
-        token = response_dom.getElementsByTagName('guid')[0]
+        dom = minidom.parseString(response.read())
+        token = dom.getElementsByTagName('guid')[0]
         return token.firstChild.data
 
 class PivotalProject(object):
-    def __init__(self, pivotal, pid, name):
+    def __init__(self, pivotal, pid, name, groups=None):
         self.pivotal = pivotal
         self.pid = int(pid)
         self.name = name
-        self.fetchIterationGroup('current')
-        self.fetchIterationGroup('backlog')
+        if not groups:
+            self.fetchGroups('current', 'backlog')
+        else:
+            self.fetchGroups(*groups)
 
     def __unicode__(self):
         return '%s [#%d]' % (self.name, self.pid)
@@ -75,16 +82,14 @@ class PivotalProject(object):
         response = urllib2.urlopen(req)
         self.iterations = self.__parseIterationsXML(response.read())
 
+    def fetchGroups(self, *args):
+        for name in args:
+            self.fetchIterationGroup(name)
+
     def fetchIterationGroup(self, name):
-        if name not in [
-                'current_backlog',
-                'backlog',
-                'done',
-                'current',
-                ]:
+        if name not in ITERATION_GROUPS:
             raise AttributeError("No souch iteration group %s" % name)
         url = 'https://www.pivotaltracker.com/services/v3/projects/%d/iterations/%s' % (self.pid, name)
-        print url
         req = urllib2.Request(url, None, {'X-TrackerToken': self.pivotal.token})
         response = urllib2.urlopen(req)
         setattr(self, 'name', self.__parseIterationsXML(response.read()))
