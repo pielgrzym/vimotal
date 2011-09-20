@@ -105,15 +105,19 @@ class PivotalProject(object):
     def printIterations(self, group=None):
         if group not in ITERATION_GROUPS:
             raise AttributeError("No souch iteration group %s" % name)
-        group = getattr(self, group, None)
-        result = ""
         if not group:
             self.fetchIterationGroup(group)
+        if group == 'current':
+            current = u"Current"
+        else:
+            current = False
+        group = getattr(self, group, None)
+        result = ""
         for iteration in group:
             result += u"◆%d | %s - %s ---------------------- %% %g\n" % (
                     int(iteration.id),
                     iteration.get_date('start').strftime("%d.%m"),
-                    iteration.get_date('finish').strftime("%d.%m"),
+                    current or iteration.get_date('finish').strftime("%d.%m"),
                     float(iteration.team_strength),
                     )
             for story in iteration.stories:
