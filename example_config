@@ -1,0 +1,12 @@
+[auth]
+user = pivotal_username
+password = pivotal_password
+
+[main]
+cachefile = .vimotalcache
+
+[project_mysite]
+id = pivota_project_id_here
+
+[project_supercapacitor]
+id = pivota_project_id_here
