@@ -1,9 +1,9 @@
-pyfile /home/pielgrzym/.vim/bundle/vimotal/vimotal.py
 function! GetPivotalGroup(name, group)
 python << EOF
 import vim, sys, os
-scriptdir = "/home/pielgrzym/.vim/bundle/vimotal"
-sys.path.append(scriptdir)
+vimotal_file = vim.eval('pathogen#runtime_findfile("vimotal.py", 0)')
+sys.path.append(os.path.dirname(vimotal_file))
+from vimotal import Pivotal
 
 name = vim.eval("a:name")
 group = vim.eval("a:group")
