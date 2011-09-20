@@ -121,7 +121,8 @@ class PivotalProject(object):
                     float(iteration.team_strength),
                     )
             for story in iteration.stories:
-                result += u"    ▶ %d %s %s\n" % (
+                result += u"%s ▶ %d %s %s\n" % (
+                            story.get_state(),
                             int(story.id),
                             story.get_type(),
                             story.name,
@@ -191,3 +192,14 @@ class PivotalStory(object):
             return u"◎ "
         else:
             return u"-"
+
+    def get_state(self):
+        state = self.current_state
+        if state == 'accepted':
+            return '.'
+        elif state == 'started':
+            return '_'
+        elif state == 'unstarted' or state == 'rejected':
+            return ','
+        elif state == 'unscheduled':
+            return '^'

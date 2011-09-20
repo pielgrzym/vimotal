@@ -20,5 +20,6 @@ setlocal buftype=nofile
 setlocal bufhidden=hide
 setlocal nobuflisted
 setlocal noswapfile
+setlocal syntax=vimotal
 call GetPivotalGroup(a:name, "current")
 endfunction
