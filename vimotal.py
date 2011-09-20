@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import urllib, urllib2
 import ConfigParser
@@ -19,7 +20,6 @@ class Pivotal(object):
         user = self.settings.get('auth', 'user')
         password = self.settings.get('auth', 'password')
         self.token = self.getToken(user, password)
-        # cache = self.settings.get('main', 'cache')
         try:
             self.projects = self.readCache()
         except (IOError, EOFError):
@@ -102,6 +102,29 @@ class PivotalProject(object):
             iterations.append(PivotalIteration(i))
         return iterations
 
+    def printIterations(self, group=None):
+        if group not in ITERATION_GROUPS:
+            raise AttributeError("No souch iteration group %s" % name)
+        group = getattr(self, group, None)
+        result = ""
+        if not group:
+            self.fetchIterationGroup(group)
+        for iteration in group:
+            result += u"◆%d | %s - %s ---------------------- %% %g\n" % (
+                    int(iteration.id),
+                    iteration.get_date('start').strftime("%d.%m"),
+                    iteration.get_date('finish').strftime("%d.%m"),
+                    float(iteration.team_strength),
+                    )
+            for story in iteration.stories:
+                result += u"    ▶ %d %s %s\n" % (
+                            int(story.id),
+                            story.get_type(),
+                            story.name,
+                        )
+        return result
+
+
 class PivotalIteration(object):
     def __init__(self, data):
         field_list = ['id', 'number', 'start', 'finish', 'team_strength']
@@ -114,8 +137,18 @@ class PivotalIteration(object):
                 setattr(self, field, None)
         self.stories = [ PivotalStory(s) for s in data.getElementsByTagName('story') ]
 
+    def get_date(self, dname):
+        if dname not in ['start', 'finish']:
+            raise AttributeError("No souch date: %s" % dname)
+        date = getattr(self, dname, None)
+        from datetime import datetime
+        try:
+            return datetime.strptime(date[:19], "%Y/%m/%d %H:%M:%S")
+        except:
+            return "---"
+
     def __unicode__(self):
-        return '[#%d] - %d' % int(self.id, self.team_strength)
+        return self.id
 
 class PivotalStory(object):
     def __init__(self, data):
@@ -143,3 +176,14 @@ class PivotalStory(object):
 
     def __unicode__(self):
         return '[#%d] %s' % int(self.id, self.name)
+
+    def get_type(self):
+        story_type = self.story_type
+        if story_type == 'feature':
+            return u"★ "
+        elif story_type == 'bug':
+            return u"ω"
+        elif story_type == 'chore':
+            return u"◎ "
+        else:
+            return u"-"
