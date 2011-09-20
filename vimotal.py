@@ -186,7 +186,7 @@ class PivotalStory(object):
         if story_type == 'feature':
             return u"★ "
         elif story_type == 'bug':
-            return u"ω"
+            return u"✗ "
         elif story_type == 'chore':
             return u"◎ "
         else:
