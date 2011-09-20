@@ -31,6 +31,7 @@ class Pivotal(object):
         r = {}
         for project_name in project_names:
             pid = self.settings.get(project_name, 'id')
+            project_name = project_name.replace('project_','')
             project = PivotalProject(self, pid, project_name)
             r[project_name] = project
         self.writeCache(r)
