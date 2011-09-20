@@ -126,7 +126,7 @@ class PivotalProject(object):
                             story.get_type(),
                             story.name,
                         )
-        return result
+        return result[:-1]
 
 
 class PivotalIteration(object):
