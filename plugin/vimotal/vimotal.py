@@ -107,33 +107,28 @@ class PivotalProject(object):
     def current(self):
         if hasattr(self, '_current'):
             return self._current
-        cache_name = "%s_current_cache" % self.pid
-        cache_file = os.path.join(self.pivotal.settings_dir, cache_name)
-        if os.path.exists(cache_file):
-            with codecs.open(cache_file, 'r', 'utf-8') as cache:
-                self._current = cache.read()
-        else:
-            current_group = self.fetchIterationGroup('current')
-            self._current = self.printIterations(current_group, current=True)
-            with codecs.open(cache_file, 'w', 'utf-8') as cache:
-                cache.write(self._current)
-        return self._current
+        return self.fetchGroupFromCache('current', is_current=True)
 
     @property
     def backlog(self):
         if hasattr(self, '_backlog'):
             return self._backlog
-        cache_name = "%s_backlog_cache" % self.pid
+        return self.fetchGroupFromCache('backlog')
+
+    def fetchGroupFromCache(self, name, is_current=False):
+        if name not in ITERATION_GROUPS:
+            raise AttributeError("No souch iteration group %s" % name)
+        cache_name = "%s_%s_cache" % (self.pid, name)
         cache_file = os.path.join(self.pivotal.settings_dir, cache_name)
         if os.path.exists(cache_file):
             with codecs.open(cache_file, 'r', 'utf-8') as cache:
-                self._backlog = cache.read()
+                setattr(self, '_%s' % name, cache.read())
         else:
-            backlog_group = self.fetchIterationGroup('backlog')
-            self._backlog = self.printIterations(backlog_group)
+            group = self.fetchIterationGroup(name)
+            setattr(self, '_%s' % name, self.printIterations(group, is_current))
             with codecs.open(cache_file, 'w', 'utf-8') as cache:
-                cache.write(self._backlog)
-        return self._backlog
+                cache.write(getattr(self, '_%s' % name))
+        return getattr(self, '_%s' % name)
 
     def __unicode__(self):
         return '%s [#%d]' % (self.name, self.pid)
@@ -257,3 +252,5 @@ class PivotalStory(object):
             return ','
         elif state == 'unscheduled':
             return '^'
+        else:
+            return '?'
