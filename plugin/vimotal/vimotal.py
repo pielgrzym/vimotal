@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import os
+import os, codecs
 import urllib, urllib2
+import warnings
 import ConfigParser
 import cPickle as pickle
 from xml.dom import minidom
@@ -16,14 +17,46 @@ class Pivotal(object):
     def __init__(self):
         home = os.getenv("HOME")
         self.settings = ConfigParser.ConfigParser()
-        self.settings.read(os.path.join(home, '.vimotal'))
+        self.settings_dir = os.path.join(home, '.vimotal')
+        if not os.path.exists(self.settings_dir):
+            os.makedirs(self.settings_dir)
+            warnings.warn("Created settings directory", RuntimeWarning)
+        settings_file = os.path.join(self.settings_dir, 'vimotalrc')
+        if not os.path.exists(settings_file):
+            raise RuntimeError("You need to create settings file")
+        self.settings.read(settings_file)
         user = self.settings.get('auth', 'user')
         password = self.settings.get('auth', 'password')
         self.token = self.getToken(user, password)
         try:
-            self.projects = self.readCache()
+            self.projects = self.loadProjects()
         except (IOError, EOFError):
             self.fetchProjects()
+            self.writeProjects()
+
+    def loadProjects(self):
+        """
+        Loads projects from cache
+
+        """
+        with open(os.path.join(self.settings_dir, "projects_cache")) as cache:
+            projects = [PivotalProject(self, *l.split(",")) for l in
+                    cache.readlines()]
+        result = {}
+        for p in projects:
+            result[p.name.strip()] = p
+        return result
+
+    def writeProjects(self):
+        """
+        Writes projects to cache
+
+        """
+        with open(os.path.join(self.settings_dir, "projects_cache"), 'w') as cache:
+            data = ""
+            for p in self.projects.values():
+                data += "%d,%s\n" % (int(p.pid), p.name)
+            cache.write(data)
 
     def fetchProjects(self):
         config_sections = self.settings.sections()
@@ -69,10 +102,38 @@ class PivotalProject(object):
         self.pivotal = pivotal
         self.pid = int(pid)
         self.name = name
-        if groups is None:
-            self.fetchGroups('current', 'backlog')
+
+    @property
+    def current(self):
+        if hasattr(self, '_current'):
+            return self._current
+        cache_name = "%s_current_cache" % self.pid
+        cache_file = os.path.join(self.pivotal.settings_dir, cache_name)
+        if os.path.exists(cache_file):
+            with codecs.open(cache_file, 'r', 'utf-8') as cache:
+                self._current = cache.read()
         else:
-            self.fetchGroups(*groups)
+            current_group = self.fetchIterationGroup('current')
+            self._current = self.printIterations(current_group, current=True)
+            with codecs.open(cache_file, 'w', 'utf-8') as cache:
+                cache.write(self._current)
+        return self._current
+
+    @property
+    def backlog(self):
+        if hasattr(self, '_backlog'):
+            return self._backlog
+        cache_name = "%s_backlog_cache" % self.pid
+        cache_file = os.path.join(self.pivotal.settings_dir, cache_name)
+        if os.path.exists(cache_file):
+            with codecs.open(cache_file, 'r', 'utf-8') as cache:
+                self._backlog = cache.read()
+        else:
+            backlog_group = self.fetchIterationGroup('backlog')
+            self._backlog = self.printIterations(backlog_group)
+            with codecs.open(cache_file, 'w', 'utf-8') as cache:
+                cache.write(self._backlog)
+        return self._backlog
 
     def __unicode__(self):
         return '%s [#%d]' % (self.name, self.pid)
@@ -93,7 +154,7 @@ class PivotalProject(object):
         url = 'https://www.pivotaltracker.com/services/v3/projects/%d/iterations/%s' % (self.pid, name)
         req = urllib2.Request(url, None, {'X-TrackerToken': self.pivotal.token})
         response = urllib2.urlopen(req)
-        setattr(self, name, self.__parseIterationsXML(response.read()))
+        return self.__parseIterationsXML(response.read())
 
     def __parseIterationsXML(self, xml):
         dom = minidom.parseString(xml)
@@ -102,16 +163,9 @@ class PivotalProject(object):
             iterations.append(PivotalIteration(i))
         return iterations
 
-    def printIterations(self, group=None):
-        if group not in ITERATION_GROUPS:
-            raise AttributeError("No souch iteration group %s" % name)
-        if not group:
-            self.fetchIterationGroup(group)
-        if group == 'current':
+    def printIterations(self, group, current=False):
+        if current:
             current = u"Current"
-        else:
-            current = False
-        group = getattr(self, group, None)
         result = ""
         for iteration in group:
             result += u"◆%d | %s - %s ---------------------- %% %g\n" % (
