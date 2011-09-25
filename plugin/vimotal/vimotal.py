@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-import os, codecs import urllib, urllib2 import warnings import ConfigParser
+import os, codecs
+import urllib, urllib2
+import warnings
+import ConfigParser
 from xml.dom import minidom
 
 ITERATION_GROUPS = (
