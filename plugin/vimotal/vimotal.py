@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, codecs
-import urllib, urllib2
-import warnings
-import ConfigParser
-import cPickle as pickle
+import os, codecs import urllib, urllib2 import warnings import ConfigParser
 from xml.dom import minidom
 
 ITERATION_GROUPS = (
@@ -70,21 +66,11 @@ class Pivotal(object):
         self.writeCache(r)
         self.projects = r
 
-    def readCache(self):
-        c = None
-        cachefile = self.settings.get('main', 'cachefile')
-        home = os.getenv("HOME")
-        with open(os.path.join(home,cachefile), 'rb') as cache:
-            c = pickle.load(cache)
-        return c
-
-    def writeCache(self, data):
-        cachefile = self.settings.get('main', 'cachefile')
-        home = os.getenv("HOME")
-        with open(os.path.join(home,cachefile), 'wb') as cache:
-            pickle.dump(data, cache)
-
     def getToken(self, username, password):
+        """
+        Authorizes in pivotal and fetches a token used afterwards to authorize
+        connections
+        """
         authurl = "https://www.pivotaltracker.com/services/v3/tokens/active"
         values = {
                 'username': username,
@@ -116,9 +102,14 @@ class PivotalProject(object):
         return self.fetchGroupFromCache('backlog')
 
     def fetchGroupFromCache(self, name, is_current=False):
+        """
+        Tries to open file with given group data if it fails it uses
+        fetchIterationGroup method to download and parse the iteration group.
+        Used by group properties
+        """
         if name not in ITERATION_GROUPS:
             raise AttributeError("No souch iteration group %s" % name)
-        cache_name = "%s_%s_cache" % (self.pid, name)
+        cache_name = "%d_%s_cache" % (self.pid, name)
         cache_file = os.path.join(self.pivotal.settings_dir, cache_name)
         if os.path.exists(cache_file):
             with codecs.open(cache_file, 'r', 'utf-8') as cache:
@@ -144,6 +135,9 @@ class PivotalProject(object):
             self.fetchIterationGroup(name)
 
     def fetchIterationGroup(self, name):
+        """
+        Downloads group XML and returns itertion/story objects
+        """
         if name not in ITERATION_GROUPS:
             raise AttributeError("No souch iteration group %s" % name)
         url = 'https://www.pivotaltracker.com/services/v3/projects/%d/iterations/%s' % (self.pid, name)
@@ -159,6 +153,10 @@ class PivotalProject(object):
         return iterations
 
     def printIterations(self, group, current=False):
+        """
+        Pretty print of iterations from given group
+        current param changes group header display
+        """
         if current:
             current = u"Current"
         result = ""
