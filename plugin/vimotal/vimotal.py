@@ -104,6 +104,12 @@ class PivotalProject(object):
             return self._backlog
         return self.fetchGroupFromCache('backlog')
 
+    @property
+    def icebox(self):
+        if hasattr(self, '_icebox'):
+            return self._icebox
+        return self.fetchFilteredStoriesFromCache('icebox', 'state:unscheduled')
+
     def fetchGroupFromCache(self, name, is_current=False):
         """
         Tries to open file with given group data if it fails it uses
@@ -120,6 +126,21 @@ class PivotalProject(object):
         else:
             group = self.fetchIterationGroup(name)
             setattr(self, '_%s' % name, self.printIterations(group, is_current))
+            with codecs.open(cache_file, 'w', 'utf-8') as cache:
+                cache.write(getattr(self, '_%s' % name))
+        return getattr(self, '_%s' % name)
+
+    def fetchFilteredStoriesFromCache(self, name, terms):
+        from hashlib import sha1
+        term_hash = sha1(terms).hexdigest()[:8]
+        cache_name = "%d_%s_cache" % (self.pid, term_hash)
+        cache_file = os.path.join(self.pivotal.settings_dir, cache_name)
+        if os.path.exists(cache_file):
+            with codecs.open(cache_file, 'r', 'utf-8') as cache:
+                setattr(self, '_%s' % name, cache.read())
+        else:
+            group = self.fetchFilteredStories(terms)
+            setattr(self, '_%s' % name, self.printStories(group))
             with codecs.open(cache_file, 'w', 'utf-8') as cache:
                 cache.write(getattr(self, '_%s' % name))
         return getattr(self, '_%s' % name)
@@ -147,6 +168,23 @@ class PivotalProject(object):
         req = urllib2.Request(url, None, {'X-TrackerToken': self.pivotal.token})
         response = urllib2.urlopen(req)
         return self.__parseIterationsXML(response.read())
+
+    def fetchFilteredStories(self, terms):
+        """
+        Downloads iterations filtered by pivotal search
+        """
+        url = 'https://www.pivotaltracker.com/services/v3/projects/%d/stories?%s' %\
+                (self.pid, urllib.urlencode({'filter': terms}))
+        req = urllib2.Request(url, None, {'X-TrackerToken': self.pivotal.token})
+        response = urllib2.urlopen(req)
+        return self.__parseStoriesXML(response.read())
+
+    def __parseStoriesXML(self, xml):
+        dom = minidom.parseString(xml)
+        stories = []
+        for i in dom.getElementsByTagName('story'):
+            stories.append(PivotalStory(i))
+        return stories
 
     def __parseIterationsXML(self, xml):
         dom = minidom.parseString(xml)
@@ -177,6 +215,21 @@ class PivotalProject(object):
                             story.get_type(),
                             story.name,
                         )
+        return result[:-1]
+
+    def printStories(self, stories):
+        """
+        Pretty print given list of stories
+        current param changes group header display
+        """
+        result = ""
+        for story in stories:
+            result += u"%s ▶ %d %s %s\n" % (
+                        story.get_state(),
+                        int(story.id),
+                        story.get_type(),
+                        story.name,
+                    )
         return result[:-1]
 
 
