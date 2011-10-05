@@ -47,7 +47,7 @@ function! InvokeVimotal()
         call inputsave()
         let project_name = input('Enter project name: ')
         call inputrestore()
-        call OpenPivotalProject(project_name)
+        silent call OpenPivotalProject(project_name)
 endfunction
 
 nmap <Leader>p :call InvokeVimotal()<CR>
