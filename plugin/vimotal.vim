@@ -42,6 +42,7 @@ function! ClosePivotal()
         if moveLeft && tabpagenr() != 1
             tabp
         endif
+        unmap q
 endfunction
 
 function! OpenPivotalProject(name)
