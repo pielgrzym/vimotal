@@ -32,6 +32,7 @@ function! PivotalPrepareBuffer(name)
         setlocal nobuflisted
         setlocal noswapfile
         setlocal syntax=vimotal
+        setlocal hi cursorline
         nmap q :call ClosePivotal()<CR>
 endfunction
 
