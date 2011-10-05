@@ -22,25 +22,25 @@ EOF
 endfunction
 
 function! PivotalPrepareBuffer()
-setlocal buftype=nofile
-setlocal bufhidden=hide
-setlocal nobuflisted
-setlocal noswapfile
-setlocal syntax=vimotal
+        setlocal buftype=nofile
+        setlocal bufhidden=hide
+        setlocal nobuflisted
+        setlocal noswapfile
+        setlocal syntax=vimotal
 endfunction
 
 function! OpenPivotalProject(name)
-exec 'tabnew pivotal_'.a:name.'_icebox'
-call PivotalPrepareBuffer()
-call GetPivotalGroup(a:name, "icebox")
+        exec 'tabnew pivotal_'.a:name.'_icebox'
+        call PivotalPrepareBuffer()
+        call GetPivotalGroup(a:name, "icebox")
 
-exec 'vs pivotal_'.a:name.'_backlog'
-call PivotalPrepareBuffer()
-call GetPivotalGroup(a:name, "backlog")
+        exec 'vs pivotal_'.a:name.'_backlog'
+        call PivotalPrepareBuffer()
+        call GetPivotalGroup(a:name, "backlog")
 
-exec 'vs pivotal_'.a:name.'_current'
-call PivotalPrepareBuffer()
-call GetPivotalGroup(a:name, "current")
+        exec 'vs pivotal_'.a:name.'_current'
+        call PivotalPrepareBuffer()
+        call GetPivotalGroup(a:name, "current")
 endfunction
 
 function! InvokeVimotal()
