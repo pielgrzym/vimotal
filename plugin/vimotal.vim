@@ -2,7 +2,7 @@
 function! GetPivotalGroup(name, group)
 python << EOF
 import vim, sys, os
-vimotal_file = vim.eval('pathogen#runtime_findfile("vimotal.vim", 0)')
+vimotal_file = vim.eval('expand("<sfile>")')
 sys.path.append(os.path.dirname(vimotal_file))
 from vimotal import pivotal
 
