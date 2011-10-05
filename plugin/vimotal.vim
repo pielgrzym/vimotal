@@ -42,3 +42,12 @@ exec 'vs pivotal_'.a:name.'_current'
 call PivotalPrepareBuffer()
 call GetPivotalGroup(a:name, "current")
 endfunction
+
+function! InvokeVimotal()
+        call inputsave()
+        let project_name = input('Enter project name: ')
+        call inputrestore()
+        call OpenPivotalProject(project_name)
+endfunction
+
+nmap <Leader>p :call InvokeVimotal()<CR>
