@@ -33,7 +33,7 @@ function! PivotalPrepareBuffer(name)
         setlocal noswapfile
         setlocal syntax=vimotal
         setlocal hi cursorline
-        nmap q :call ClosePivotal()<CR>
+        nmap <buffer> q :call ClosePivotal()<CR>
 endfunction
 
 function! ClosePivotal()
@@ -43,7 +43,6 @@ function! ClosePivotal()
         if moveLeft && tabpagenr() != 1
             tabp
         endif
-        unmap q
 endfunction
 
 function! OpenPivotalProject(name)
