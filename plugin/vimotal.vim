@@ -2,7 +2,7 @@
 function! GetPivotalGroup(name, group)
 python << EOF
 import vim, sys, os
-vimotal_file = vim.eval('expand("<sfile>")')
+vimotal_file = vim.eval('pathogen#runtime_findfile("vimotal.vim", 0)')
 sys.path.append(os.path.dirname(vimotal_file))
 from vimotal import pivotal
 
@@ -21,25 +21,35 @@ vim.current.buffer[:] = [ a.encode('utf-8') for a in iterations.split('\n')]
 EOF
 endfunction
 
-function! PivotalPrepareBuffer()
+function! PivotalPrepareBuffer(name)
         setlocal buftype=nofile
         setlocal bufhidden=hide
         setlocal nobuflisted
         setlocal noswapfile
         setlocal syntax=vimotal
+        nmap q :call ClosePivotal()<CR>
+endfunction
+
+function! ClosePivotal()
+        silent windo setlocal bufhidden=wipe
+        let moveLeft = tabpagenr() == tabpagenr('$') ? 0 : 1
+        tabc
+        if moveLeft && tabpagenr() != 1
+            tabp
+        endif
 endfunction
 
 function! OpenPivotalProject(name)
         exec 'tabnew pivotal_'.a:name.'_icebox'
-        call PivotalPrepareBuffer()
+        call PivotalPrepareBuffer(a:name)
         call GetPivotalGroup(a:name, "icebox")
 
         exec 'vs pivotal_'.a:name.'_backlog'
-        call PivotalPrepareBuffer()
+        call PivotalPrepareBuffer(a:name)
         call GetPivotalGroup(a:name, "backlog")
 
         exec 'vs pivotal_'.a:name.'_current'
-        call PivotalPrepareBuffer()
+        call PivotalPrepareBuffer(a:name)
         call GetPivotalGroup(a:name, "current")
 endfunction
 
