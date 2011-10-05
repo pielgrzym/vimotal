@@ -1,9 +1,14 @@
+let g:vimotal_path = expand("<sfile>:p:h")
 
 function! GetPivotalGroup(name, group)
 python << EOF
 import vim, sys, os
-vimotal_file = vim.eval('pathogen#runtime_findfile("vimotal.vim", 0)')
-sys.path.append(os.path.dirname(vimotal_file))
+vimotal_dir = vim.eval('g:vimotal_path')
+vimotal_module = os.path.join(vimotal_dir, 'vimotal')
+sys.path.append(os.path.dirname(vimotal_module))
+# vimotal_file = vim.eval('pathogen#runtime_findfile("vimotal.py", 0)')
+# sys.path.append(os.path.dirname(vimotal_file))
+# vim.current.buffer[:] = [vimotal_module]
 from vimotal import pivotal
 
 name = vim.eval("a:name")
